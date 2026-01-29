@@ -1,24 +1,7 @@
 {
-  "name": "xyz-ai-chatbot",
+  "name": "ai-chatbot",
   "version": "3.1.0",
   "private": true,
-  "description": "<a href=\"https://chat.vercel.ai/\">   <img alt=\"Next.js 14 and App Router-ready AI chatbot.\" src=\"app/(chat)/opengraph-image.png\">   <h1 align=\"center\">Chat SDK</h1> </a>",
-  "homepage": "https://github.com/HumbleCorp/xyz-ai-chatbot#readme",
-  "bugs": {
-    "url": "https://github.com/HumbleCorp/xyz-ai-chatbot/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/HumbleCorp/xyz-ai-chatbot.git"
-  },
-  "license": "ISC",
-  "author": "",
-  "type": "commonjs",
-  "main": "index.js",
-  "directories": {
-    "lib": "lib",
-    "test": "tests"
-  },
   "scripts": {
     "dev": "next dev --turbo",
     "build": "tsx lib/db/migrate && next build",
