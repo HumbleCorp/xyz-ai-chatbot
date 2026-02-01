@@ -6,20 +6,9 @@ type Entitlements = {
 
 export const entitlementsByUserType: Record<UserType, Entitlements> = {
   /*
-   * For users without an account
-   */
-  guest: {
-    maxMessagesPerDay: 20,
-  },
-
-  /*
-   * For users with an account
+   * For users with an @xyz.vc Google account
    */
   regular: {
     maxMessagesPerDay: 50,
   },
-
-  /*
-   * TODO: For users with an account and a paid membership
-   */
 };

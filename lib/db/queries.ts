@@ -62,19 +62,32 @@ export async function createUser(email: string, password: string) {
   }
 }
 
-export async function createGuestUser() {
-  const email = `guest-${Date.now()}`;
-  const password = generateHashedPassword(generateUUID());
-
+export async function createOrGetGoogleUser(email: string): Promise<User> {
   try {
-    return await db.insert(user).values({ email, password }).returning({
-      id: user.id,
-      email: user.email,
-    });
+    // Check if user already exists
+    const existingUsers = await db
+      .select()
+      .from(user)
+      .where(eq(user.email, email));
+
+    if (existingUsers.length > 0) {
+      return existingUsers[0];
+    }
+
+    // Create new user for Google OAuth (no password)
+    const [newUser] = await db
+      .insert(user)
+      .values({
+        email,
+        password: null,
+      })
+      .returning();
+
+    return newUser;
   } catch (_error) {
     throw new ChatSDKError(
       "bad_request:database",
-      "Failed to create guest user"
+      "Failed to create or get Google user"
     );
   }
 }

@@ -1,12 +1,15 @@
-import { compare } from "bcrypt-ts";
 import NextAuth, { type DefaultSession } from "next-auth";
 import type { DefaultJWT } from "next-auth/jwt";
+import type { Provider } from "next-auth/providers";
 import Credentials from "next-auth/providers/credentials";
-import { DUMMY_PASSWORD } from "@/lib/constants";
-import { createGuestUser, getUser } from "@/lib/db/queries";
+import Google from "next-auth/providers/google";
+import { isTestEnvironment } from "@/lib/constants";
+import { createOrGetGoogleUser } from "@/lib/db/queries";
 import { authConfig } from "./auth.config";
 
-export type UserType = "guest" | "regular";
+export type UserType = "regular";
+
+const ALLOWED_DOMAIN = "xyz.vc";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -14,12 +17,6 @@ declare module "next-auth" {
       id: string;
       type: UserType;
     } & DefaultSession["user"];
-  }
-
-  interface User {
-    id?: string;
-    email?: string | null;
-    type: UserType;
   }
 }
 
@@ -30,6 +27,45 @@ declare module "next-auth/jwt" {
   }
 }
 
+// Build providers list - add test credentials only in test environment
+const providers: Provider[] = [
+  Google({
+    clientId: process.env.AUTH_GOOGLE_ID,
+    clientSecret: process.env.AUTH_GOOGLE_SECRET,
+    authorization: {
+      params: {
+        prompt: "consent",
+        access_type: "offline",
+        response_type: "code",
+        hd: ALLOWED_DOMAIN, // Hint to Google to show only @xyz.vc accounts
+      },
+    },
+  }),
+];
+
+// Add test credentials provider for Playwright tests only
+if (isTestEnvironment) {
+  providers.push(
+    Credentials({
+      id: "playwright",
+      credentials: {
+        email: { label: "Email", type: "email" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email) return null;
+        const email = credentials.email as string;
+        // Only allow test emails in test environment
+        if (!email.includes("@playwright.com")) return null;
+        return {
+          id: `test-${email}`,
+          email,
+          name: "Test User",
+        };
+      },
+    })
+  );
+}
+
 export const {
   handlers: { GET, POST },
   auth,
@@ -37,49 +73,36 @@ export const {
   signOut,
 } = NextAuth({
   ...authConfig,
-  providers: [
-    Credentials({
-      credentials: {},
-      async authorize({ email, password }: any) {
-        const users = await getUser(email);
-
-        if (users.length === 0) {
-          await compare(password, DUMMY_PASSWORD);
-          return null;
-        }
-
-        const [user] = users;
-
-        if (!user.password) {
-          await compare(password, DUMMY_PASSWORD);
-          return null;
-        }
-
-        const passwordsMatch = await compare(password, user.password);
-
-        if (!passwordsMatch) {
-          return null;
-        }
-
-        return { ...user, type: "regular" };
-      },
-    }),
-    Credentials({
-      id: "guest",
-      credentials: {},
-      async authorize() {
-        const [guestUser] = await createGuestUser();
-        return { ...guestUser, type: "guest" };
-      },
-    }),
-  ],
+  providers,
   callbacks: {
-    jwt({ token, user }) {
-      if (user) {
-        token.id = user.id as string;
-        token.type = user.type;
+    async signIn({ user, account }) {
+      // Allow test credentials in test environment
+      if (account?.provider === "playwright" && isTestEnvironment) {
+        return true;
       }
-
+      // Only allow @xyz.vc domain emails for Google
+      if (account?.provider === "google") {
+        const email = user.email;
+        if (!email || !email.endsWith(`@${ALLOWED_DOMAIN}`)) {
+          return false;
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user, account, profile }) {
+      // Handle test credentials
+      if (account?.provider === "playwright" && isTestEnvironment && user) {
+        const dbUser = await createOrGetGoogleUser(user.email as string);
+        token.id = dbUser.id;
+        token.type = "regular";
+        return token;
+      }
+      // On Google sign-in, create or get the user from our database
+      if (account?.provider === "google" && profile?.email) {
+        const dbUser = await createOrGetGoogleUser(profile.email);
+        token.id = dbUser.id;
+        token.type = "regular";
+      }
       return token;
     },
     session({ session, token }) {
@@ -87,7 +110,6 @@ export const {
         session.user.id = token.id;
         session.user.type = token.type;
       }
-
       return session;
     },
   },

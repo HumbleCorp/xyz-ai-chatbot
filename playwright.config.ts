@@ -19,6 +19,8 @@ const PORT = process.env.PORT || 3000;
  */
 const baseURL = `http://localhost:${PORT}`;
 
+const STORAGE_STATE_PATH = "tests/.auth/user.json";
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -44,55 +46,46 @@ export default defineConfig({
   },
 
   /* Configure global timeout for each test */
-  timeout: 240 * 1000, // 120 seconds
+  timeout: 240 * 1000, // 240 seconds
   expect: {
     timeout: 240 * 1000,
   },
 
   /* Configure projects */
   projects: [
+    // Setup project - authenticates and saves state
     {
-      name: "e2e",
-      testMatch: /e2e\/.*.test.ts/,
+      name: "setup",
+      testMatch: /global-setup\.ts/,
       use: {
         ...devices["Desktop Chrome"],
       },
     },
 
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
+    // Auth tests - run without authentication (test login page, etc.)
+    {
+      name: "auth",
+      testMatch: /e2e\/auth\.test\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+      },
+    },
 
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
+    // E2E tests - run with authentication
+    {
+      name: "e2e",
+      testMatch: /e2e\/(?!auth).*\.test\.ts/,
+      dependencies: ["setup"],
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: STORAGE_STATE_PATH,
+      },
+    },
   ],
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "pnpm dev",
+    command: "PLAYWRIGHT=True NEXT_PUBLIC_PLAYWRIGHT=true pnpm dev",
     url: `${baseURL}/ping`,
     timeout: 120 * 1000,
     reuseExistingServer: !process.env.CI,
