@@ -32,6 +32,7 @@ import {
   DEFAULT_CHAT_MODEL,
   modelsByProvider,
 } from "@/lib/ai/models";
+import { FILE_ACCEPT_STRING } from "@/lib/constants/file-types";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
@@ -308,6 +309,7 @@ function PureMultimodalInput({
         )}
 
       <input
+        accept={FILE_ACCEPT_STRING}
         className="pointer-events-none fixed -top-4 -left-4 size-0.5 opacity-0"
         multiple
         onChange={handleFileChange}

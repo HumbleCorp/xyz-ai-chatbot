@@ -28,6 +28,12 @@ export const chatModels: ChatModel[] = [
     provider: "anthropic",
     description: "Most capable Anthropic model",
   },
+  {
+    id: "anthropic/claude-opus-4-6",
+    name: "Claude Opus 4.6",
+    provider: "anthropic",
+    description: "Latest and most capable Anthropic model",
+  },
   // OpenAI
   {
     id: "openai/gpt-4.1-mini",
@@ -63,14 +69,20 @@ export const chatModels: ChatModel[] = [
   },
   // Reasoning models (extended thinking)
   {
+    id: "anthropic/claude-opus-4-6-thinking",
+    name: "Claude Opus 4.6 (Thinking)",
+    provider: "reasoning",
+    description: "Latest model with extended thinking for complex problems",
+  },
+  {
     id: "anthropic/claude-3.7-sonnet-thinking",
-    name: "Claude 3.7 Sonnet",
+    name: "Claude 3.7 Sonnet (Thinking)",
     provider: "reasoning",
     description: "Extended thinking for complex problems",
   },
   {
     id: "xai/grok-code-fast-1-thinking",
-    name: "Grok Code Fast",
+    name: "Grok Code Fast (Thinking)",
     provider: "reasoning",
     description: "Reasoning optimized for code",
   },

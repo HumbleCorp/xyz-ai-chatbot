@@ -1,8 +1,35 @@
 import Image from "next/image";
+import {
+  FileText,
+  FileCode,
+  FileSpreadsheet,
+  File as FileIcon,
+} from "lucide-react";
 import type { Attachment } from "@/lib/types";
+import { getFileTypeCategory } from "@/lib/constants/file-types";
 import { Loader } from "./elements/loader";
 import { CrossSmallIcon } from "./icons";
 import { Button } from "./ui/button";
+
+const getFileIcon = (contentType: string) => {
+  const category = getFileTypeCategory(contentType);
+
+  switch (category) {
+    case "document":
+      return <FileText className="size-8 text-muted-foreground" />;
+    case "text":
+      return <FileText className="size-8 text-muted-foreground" />;
+    case "code":
+      return <FileCode className="size-8 text-muted-foreground" />;
+    case "office":
+      if (contentType.includes("spreadsheet") || contentType.includes("excel")) {
+        return <FileSpreadsheet className="size-8 text-muted-foreground" />;
+      }
+      return <FileText className="size-8 text-muted-foreground" />;
+    default:
+      return <FileIcon className="size-8 text-muted-foreground" />;
+  }
+};
 
 export const PreviewAttachment = ({
   attachment,
@@ -29,8 +56,8 @@ export const PreviewAttachment = ({
           width={64}
         />
       ) : (
-        <div className="flex size-full items-center justify-center text-muted-foreground text-xs">
-          File
+        <div className="flex size-full flex-col items-center justify-center gap-1 p-2">
+          {getFileIcon(contentType)}
         </div>
       )}
 
